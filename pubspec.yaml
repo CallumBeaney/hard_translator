@@ -1,0 +1,17 @@
+name: hard_translator
+description: A sample command-line application.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.2.4
+
+# Add regular dependencies here.
+dependencies:
+  azure_translation: ^1.0.0 # https://pub.dev/packages/azure_translation
+  dotenv: ^4.2.0 # https://pub.dev/packages/dotenv
+  # path: ^1.8.0
+
+dev_dependencies:
+  lints: ^2.1.0
+  test: ^1.24.0
