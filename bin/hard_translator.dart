@@ -3,6 +3,8 @@ import 'package:elegant/src/result.dart';
 import 'package:hard_translator/hard_translator.dart' as hc;
 import 'package:azure_translation/azure_translation.dart';
 import 'package:dotenv/dotenv.dart';
+import 'package:hard_translator/jieba/lib/analysis/jieba_segmenter.dart';
+import 'package:hard_translator/jieba/lib/analysis/seg_token.dart';
 
 (String, String) loadEnv() {
   final DotEnv env = DotEnv()..load();
@@ -11,30 +13,41 @@ import 'package:dotenv/dotenv.dart';
   return (key, region);
 }
 
-final List<String> _targetLanguages = [
-  // 'ja',
+const List<String> _targetLanguages = [
   'zh',
   'en',
+  'ja',
 ];
-
-const String targetLang = 'zh-Hans';
 
 void main(List<String> arguments) async {
   final (String key, String region) = loadEnv();
+  JiebaSegmenter seg = await JiebaSegmenter.init().then((_) => JiebaSegmenter());
+
+  /*
+    1. user inputs a sentence
+    2. translate sentence to Chinese
+    3. segment chinese and translate each word
+    4. 
+  */
 
   // final Result<LanguageList, AzureTranslationError> langListResult = await languages();
   // print(langListResult.object?.transliteration?.join('\n'));
 
   // clearTerminal();
-  String inputText = getInput();
-  List<String> parsedInput = inputText.split(' ');
+  String inputSentence = getInput();
 
+  // Extract from a list of DetectionResult classes the first language field
+  final String inputLanguage = await detect([inputSentence], key: key, region: region)
+      .then((value) => value.object!.first.language);
+  final String targetLanguage = inputLanguage == 'zh-Hans' ? 'en' : 'zh-Hans';
+
+  // get a translation of the input string, treated as a [list] containing a single String element.
   final Result<List<TranslationResult>, AzureTranslationError> res = await translate(
-    [inputText], // get a "proper" translation from the input string, whatever the length.
+    [inputSentence],
     languages: _targetLanguages,
     key: key,
     region: region,
-    // baseLanguage: // auto-detected
+    baseLanguage: inputLanguage,
   );
 
   if (!res.ok) {
@@ -42,13 +55,34 @@ void main(List<String> arguments) async {
     return;
   }
 
-  final TranslationResult sentenceTranslation = res.object!.first;
-  final String splitSentence = sentenceTranslation.translations.first.text;
-  // print(sentenceTranslation);
-  print(splitSentence);
+  final String translatedInput =
+      res.object!.first.translations.firstWhere((e) => e.to == targetLanguage).text;
+
+  // now we need to split that input string up
+  List<String> segmented = segmentText(translatedInput, targetLanguage, seg);
+
+  var revTransRes =
+      await translate(segmented, key: key, region: region, languages: _targetLanguages);
+
+  if (!revTransRes.ok) {
+    print('Error: ${revTransRes.error}');
+    return;
+  }
+
+  List<String> reverseTranslation = [];
+  for (final t in revTransRes.object!) {
+    final String word = t.translations.firstWhere((e) => e.to == inputLanguage).text;
+    reverseTranslation.add(word);
+  }
+  String finalText = reverseTranslation.join(' ');
+
+  print(translatedInput);
+  print(finalText);
 }
 
-// helpers begin
+//
+//  helpers begin
+//
 
 String getInput() {
   String? query;
@@ -66,4 +100,15 @@ void clearTerminal() {
   if (Platform.environment['TERM_PROGRAM'] != 'Apple_Terminal') {
     stdout.write(Process.runSync('clear', [], runInShell: true).stdout);
   }
+}
+
+/// TODO: implement Japanese checker as well as any other non-space-delimited languages.
+List<String> segmentText(String inputText, String languageCode, JiebaSegmenter segmenter) {
+  List<String> segmented;
+  if (languageCode == 'zh-Hans') {
+    segmented = List.from(segmenter.process(inputText, SegMode.SEARCH).map((e) => e.word));
+  } else {
+    segmented = inputText.split(' ');
+  }
+  return segmented;
 }

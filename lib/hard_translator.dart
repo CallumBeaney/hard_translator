@@ -7,6 +7,7 @@ import 'package:azure_translation/azure_translation.dart';
 
 */
 
+// https://github.com/topics/chinese-text-segmentation
 // https://pub.dev/documentation/azure_translation/latest/
 // https://github.com/alexobviously/azure_translation
 
