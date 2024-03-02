@@ -13,7 +13,10 @@ import 'package:hard_translator/jieba/lib/analysis/jieba_segmenter.dart';
 
 bool errorPresent(Result<List<TranslationResult>, AzureTranslationError> result) {
   if (!result.ok) {
-    print('Error: ${result.error}');
+    stdout.write('Error: ${result.error}');
+    return true;
+  } else if (result.object!.isEmpty || result.object == null) {
+    stdout.write('Error: empty response');
     return true;
   }
   return false;
@@ -21,13 +24,13 @@ bool errorPresent(Result<List<TranslationResult>, AzureTranslationError> result)
 
 void listLanguageCodes() async {
   final Result<LanguageList, AzureTranslationError> langListResult = await languages();
-  print(langListResult.object?.transliteration?.join('\n'));
+  stdout.write(langListResult.object?.transliteration?.join('\n'));
 }
 
 String getInput() {
   String? query;
   while (query == null) {
-    print('input your text: ');
+    stdout.write('input your text: ');
     query = stdin.readLineSync();
   }
   return query;
