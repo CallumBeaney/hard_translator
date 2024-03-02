@@ -8,5 +8,5 @@ const List<String> targetLanguages = [
   'zh',
   'fr',
   'en',
-  'ja',
+  // 'ja',
 ];
