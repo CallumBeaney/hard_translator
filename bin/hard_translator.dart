@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:elegant/src/result.dart';
-import 'package:hard_translator/hard_translator.dart' as hc;
 import 'package:azure_translation/azure_translation.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:hard_translator/jieba/lib/analysis/jieba_segmenter.dart';
-import 'package:hard_translator/jieba/lib/analysis/seg_token.dart';
 
 (String, String) loadEnv() {
   final DotEnv env = DotEnv()..load();
